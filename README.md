@@ -220,4 +220,18 @@ streamlit run app.py
 ---
 
 ## 📷 Screenshots
+### Home Page
 
+![Home Page](screenshots/ss1.png)
+
+### Price Prediction
+
+![Price Prediction](screenshots/ss2.png)
+
+### Analytics Dashboard
+
+![Analytics Dashboard](screenshots/ss3.png)
+
+### Recommendation System
+
+![Recommendation System](screenshots/ss4.png)
