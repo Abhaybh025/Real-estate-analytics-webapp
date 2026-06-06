@@ -3,7 +3,7 @@ import pickle
 import pandas as pd
 import numpy as np
 
-st.set_page_config(page_title="Viz Demo")
+st.set_page_config(page_title="Real Estate Price Predictor", layout="wide")
 
 
 
