@@ -16,7 +16,7 @@ st.title('📊 Real Estate Analytics Dashboard')
 current_dir = pathlib.Path(__file__).parent.resolve()
 project_root = current_dir.parent.parent.resolve()
 
-data_viz_path = project_root / 'data' / 'data_viz1.csv'
+data_viz_path = project_root/ 'data_viz1.csv'
 feature_text_path = project_root / 'models' / 'feature_text.pkl'
 
 new_df = pd.read_csv(data_viz_path)
