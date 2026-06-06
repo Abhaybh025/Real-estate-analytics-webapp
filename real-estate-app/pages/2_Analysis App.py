@@ -5,14 +5,14 @@ import pickle
 from wordcloud import WordCloud
 import matplotlib.pyplot as plt
 import seaborn as sns
-
-st.set_page_config(page_title="Plotting Demo")
-
-st.title('Analytics')
-
 import pathlib
 
-# Dynamic path resolution to project root
+st.set_page_config(page_title="Real Estate Analytics", layout="wide")
+
+st.title('📊 Real Estate Analytics Dashboard')
+
+
+# Load Data
 current_dir = pathlib.Path(__file__).parent.resolve()
 project_root = current_dir.parent.parent.resolve()
 
@@ -20,84 +20,138 @@ data_viz_path = project_root / 'data' / 'data_viz1.csv'
 feature_text_path = project_root / 'models' / 'feature_text.pkl'
 
 new_df = pd.read_csv(data_viz_path)
-feature_text = pickle.load(open(feature_text_path, 'rb'))
+
+with open(feature_text_path, 'rb') as f:
+    feature_text = pickle.load(f)
 
 
-group_df = new_df.groupby('sector').mean(numeric_only=True)[['price','price_per_sqft','built_up_area','latitude','longitude']]
+# Sector Price Per Sqft Map
+st.header('📍 Sector Price per Sqft Geomap')
 
-st.header('Sector Price per Sqft Geomap')
-fig = px.scatter_mapbox(group_df, lat="latitude", lon="longitude", color="price_per_sqft", size='built_up_area',
-                  color_continuous_scale=px.colors.cyclical.IceFire, zoom=10,
-                  mapbox_style="open-street-map",width=1200,height=700,hover_name=group_df.index)
+group_df = new_df.groupby('sector').mean(numeric_only=True)[
+    ['price', 'price_per_sqft', 'built_up_area', 'latitude', 'longitude']
+]
 
-st.plotly_chart(fig,use_container_width=True)
+fig = px.scatter_mapbox(
+    group_df,
+    lat="latitude",
+    lon="longitude",
+    color="price_per_sqft",
+    size="built_up_area",
+    color_continuous_scale=px.colors.cyclical.IceFire,
+    zoom=10,
+    mapbox_style="open-street-map",
+    hover_name=group_df.index,
+    width=1200,
+    height=700
+)
 
-st.header('Features Wordcloud')
+st.plotly_chart(fig, use_container_width=True)
 
-wordcloud = WordCloud(width = 800, height = 800,
-                      background_color ='black',
-                      stopwords = set(['s']),  # Any stopwords you'd like to exclude
-                      min_font_size = 10).generate(feature_text)
 
-plt.figure(figsize = (8, 8), facecolor = None)
-plt.imshow(wordcloud, interpolation='bilinear')
-plt.axis("off")
-plt.tight_layout(pad = 0)
-st.pyplot()
+# Word Cloud
+st.header('☁️ Property Features Word Cloud')
 
-st.header('Area Vs Price')
+wordcloud = WordCloud(
+    width=800,
+    height=800,
+    background_color='black',
+    stopwords={'s'},
+    min_font_size=10
+).generate(feature_text)
 
-property_type = st.selectbox('Select Property Type', ['flat','house'])
+fig_wc, ax_wc = plt.subplots(figsize=(8, 8))
 
-if property_type == 'house':
-    fig1 = px.scatter(new_df[new_df['property_type'] == 'house'], x="built_up_area", y="price", color="bedRoom", title="Area Vs Price")
+ax_wc.imshow(wordcloud, interpolation='bilinear')
+ax_wc.axis("off")
 
-    st.plotly_chart(fig1, use_container_width=True)
-else:
-    fig1 = px.scatter(new_df[new_df['property_type'] == 'flat'], x="built_up_area", y="price", color="bedRoom",
-                      title="Area Vs Price")
+plt.tight_layout()
 
-    st.plotly_chart(fig1, use_container_width=True)
+st.pyplot(fig_wc)
 
-st.header('BHK Pie Chart')
 
-sector_options = new_df['sector'].unique().tolist()
-sector_options.insert(0,'overall')
+# Area vs Price
+st.header('🏠 Area vs Price')
 
-selected_sector = st.selectbox('Select Sector', sector_options)
+property_type = st.selectbox(
+    'Select Property Type',
+    ['flat', 'house']
+)
+
+filtered_df = new_df[new_df['property_type'] == property_type]
+
+fig1 = px.scatter(
+    filtered_df,
+    x="built_up_area",
+    y="price",
+    color="bedRoom",
+    title=f"Area vs Price ({property_type.title()})"
+)
+
+st.plotly_chart(fig1, use_container_width=True)
+
+
+# BHK Pie Chart
+st.header('🥧 BHK Distribution')
+
+sector_options = sorted(new_df['sector'].dropna().unique().tolist())
+sector_options.insert(0, 'overall')
+
+selected_sector = st.selectbox(
+    'Select Sector',
+    sector_options
+)
 
 if selected_sector == 'overall':
-
-    fig2 = px.pie(new_df, names='bedRoom')
-
-    st.plotly_chart(fig2, use_container_width=True)
+    pie_df = new_df
 else:
+    pie_df = new_df[new_df['sector'] == selected_sector]
 
-    fig2 = px.pie(new_df[new_df['sector'] == selected_sector], names='bedRoom')
+fig2 = px.pie(
+    pie_df,
+    names='bedRoom',
+    title=f'BHK Distribution - {selected_sector.title()}'
+)
 
-    st.plotly_chart(fig2, use_container_width=True)
+st.plotly_chart(fig2, use_container_width=True)
 
-st.header('Side by Side BHK price comparison')
 
-fig3 = px.box(new_df[new_df['bedRoom'] <= 4], x='bedRoom', y='price', title='BHK Price Range')
+# BHK Price Comparison
+st.header('📦 BHK Price Comparison')
+
+fig3 = px.box(
+    new_df[new_df['bedRoom'] <= 4],
+    x='bedRoom',
+    y='price',
+    title='BHK Price Range'
+)
 
 st.plotly_chart(fig3, use_container_width=True)
 
 
-st.header('Side by Side Distplot for property type')
+# Price Distribution by Property Type
+st.header('📈 Property Price Distribution')
 
-fig3 = plt.figure(figsize=(10, 4))
-sns.distplot(new_df[new_df['property_type'] == 'house']['price'],label='house')
-sns.distplot(new_df[new_df['property_type'] == 'flat']['price'], label='flat')
-plt.legend()
-st.pyplot(fig3)
+fig4, ax4 = plt.subplots(figsize=(10, 5))
 
+sns.kdeplot(
+    data=new_df[new_df['property_type'] == 'house'],
+    x='price',
+    label='House',
+    fill=True,
+    ax=ax4
+)
 
+sns.kdeplot(
+    data=new_df[new_df['property_type'] == 'flat'],
+    x='price',
+    label='Flat',
+    fill=True,
+    ax=ax4
+)
 
+ax4.set_title('Price Distribution by Property Type')
+ax4.set_xlabel('Price')
+ax4.legend()
 
-
-
-
-
-
-
+st.pyplot(fig4)
